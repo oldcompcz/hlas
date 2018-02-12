@@ -45,21 +45,21 @@ n02:
         cmp     al,es:[bx]      ;compare with current value
         je      n02             ;wait for next tick
         
-        ;calculation of two constatns var01 and var02
-        ;needs to be explained ???
+        ;calculation of two constatns k1 and k2
         xor     dx,dx
-        mov     ah,ch
-        mov     ch,04h
+        mov     ah,ch           ;high part of counter into ah
+        mov     ch,04h          ;04OOh into cx
         xor     al,al
         mov     cl,al
-        div     cx
-        mov     cx,ax
-        mov     al,[k1]
-        mul     cl
-        mov     [k1],al
-        mov     ax,[k2]
-        mul     cx
-        mov     [k2],ax
+        div     cx              ;ax / 1024
+        mov     cx,ax           ;result into cx
+        mov     al,[k1]         ;k1 (03h) into al
+        mul     cl              ;result * 3
+        mov     [k1],al         ;save k1
+         
+        mov     ax,[k2]         ;k2 (0d2h) into ax
+        mul     cx              ;result * 210
+        mov     [k2],ax         ;save k2
         jmp     n03
 
 ;************************
