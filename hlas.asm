@@ -442,7 +442,7 @@ quit:   ;quit program
 
 ;041C    
 play_letter:
-        ;ascii is in al
+        ;ascii is provided in al
         ;reading pointer to data from tbl01
         cli                     ;clear interrupt enable flag
         mov     bx,offset (tbl01 - 'A') ;set pointer to the begin of ASCII
@@ -453,18 +453,23 @@ play_letter:
         mov     bx,offset tbl02 ;set base pointer to tbl02
         add     bx,ax           ;add offset from ax
 ;042B
-f09:        
-        mov     ax,[bx]         ;read data from tbl02
+f09:    ;loop L0    
+        mov     ax,[bx]         ;read word from tbl02
                                 ;------------------------
                                 ;ax [abcd efgh ijkl mnop]
+                                ;------------------------
+                                ;a    = drives loop L0
+                                ;mnop = number of cycles in loop L1
+                                ;ijk  = index to tbl04 (cycles L2)
+                                ;bcdefgh = index to tbl03 (speaker on/off) 
                                 ;------------------------
         and     al,0fh          ;al and 00001111b
         mov     cl,al           ;cl = [0000mnop]
         and     ah,80h          ;ah and 10000000b
         or      cl,ah           ;cl = [a000mnop]
 ;0436
-f07:    ;loop driving by cl reg.
-        mov     ax,[bx]         ;read data from tbl02 again
+f07:    ;loop L1 driving by cl reg.
+        mov     ax,[bx]         ;read word from tbl02 again
         rol     al,01h          ;rotate left three times 
         rol     al,01h          ;bit that goes off is set to CF
         rol     al,01h          ;the same bit is inserted to right-most position
@@ -477,7 +482,7 @@ f01:
         mov     bx,offset tbl04 ;set base pointer to tbl04
         xor     ah,ah
         add     bx,ax           ;add offset [00000ijk]
-        mov     dl,[bx]         ;result to dl - number of cycles
+        mov     dl,[bx]         ;result to dl - number of cycles for L2
         pop     bx              ;restore pointer to tbl02
         mov     al,[bx+01]      ;load high part of word to al
         push    bx              ;save pointer to tbl02
@@ -490,7 +495,7 @@ f01:
         add     bx,ax           
         mov     ah,80h          ;10000000b
 ;045D
-f05:    ;loop shaping sound acc. to tbl03
+f05:    ;loop L2 shaping sound acc. to tbl03
         ;length is given by dl reg. read from tbl04
         push    ax
         in      al,61h          ;8255 (port 61H) 
@@ -518,7 +523,7 @@ f04:
                                 ;the same bit is inserted to left-most position
         jnb     f05             ;jump if CF=0
         inc     bx              ;increment pointer to tbl03
-        jmp     f05             ;loop
+        jmp     f05             ;loop L2
           
 ;047d
 f02:    
@@ -533,13 +538,13 @@ f06:
         mov     al,cl
         and     al,0fh          ;and 00001111b
         pop     bx              ;restore pointer to tbl02
-        jne     f07             ;jump if not zero
+        jne     f07             ;loop L1 if not zero
         
         rol     cl,1            ;bit that goes off is set to CF
                                 ;the same bit is inserted to right-most position
         jb      f08             ;jump if CF=1
         add     bx,02h          ;move tbl02 pointer to next word 
-        jmp     f09
+        jmp     f09             ;loop L0
 ;0497
 f08:
         sti                     ;set interrupt enable
