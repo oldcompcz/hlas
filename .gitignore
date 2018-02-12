@@ -3,5 +3,6 @@
 *.EXE
 *.COM
 *.MAP
+*.LST
 *.TR
 *.TD

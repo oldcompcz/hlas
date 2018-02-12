@@ -102,64 +102,64 @@ tbl01   db      000h, 002h        ;AB
         db      086h, 0bch
         
 ;0173
-tbl02   db      036h, 081h, 034h, 019h
-        db      031h, 0abh, 018h, 019h
-        db      091h, 0c3h, 034h, 019h 
-        db      031h, 0e0h, 036h, 084h
-        db      092h, 0e3h, 035h, 019h
+tbl02   dw      08136h, 01934h
+        dw      0ab31h, 01918h
+        dw      0c391h, 01934h 
+        dw      0e031h, 08436h
+        dw      0e392h, 01935h
 
-        db      051h, 09ch, 031h, 031h
-        db      034h, 096h, 036h, 087h
-        db      033h, 03ah, 032h, 03dh
-        db      032h, 0c0h, 018h, 019h
-        db      051h, 09ch, 033h, 022h
+        dw      09c51h, 03131h
+        dw      09634h, 08736h
+        dw      03a33h, 03d32h
+        dw      0c032h, 01918h
+        dw      09c51h, 02233h
 
-        db      031h, 0b1h, 031h, 031h
-        db      036h, 0a5h, 031h, 031h
-        db      036h, 0a8h, 036h, 08ah
-        db      018h, 019h, 031h, 0abh
-        db      018h, 019h, 051h, 01ch
+        dw      0b131h, 03131h
+        dw      0a536h, 03131h
+        dw      0a836h, 08a36h
+        dw      01918h, 0ab31h
+        dw      01918h, 01c51h
 
-        db      034h, 031h, 032h, 034h
-        db      032h, 0b7h, 022h, 010h
-        db      013h, 019h, 021h, 0aeh
-        db      092h, 0c3h, 018h, 019h
-        db      031h, 0e0h, 036h, 08dh
+        dw      03134h, 03432h
+        dw      0b732h, 01022h
+        dw      01913h, 0ae21h
+        dw      0c392h, 01918h
+        dw      0e031h, 08d36h
 
-        db      034h, 031h, 032h, 034h
-        db      032h, 0b7h, 018h, 019h
-        db      071h, 01ch, 092h, 0c3h
-        db      032h, 031h, 032h, 043h
-        db      032h, 044h, 032h, 0c5h
+        dw      03134h, 03432h
+        dw      0b732h, 01918h
+        dw      01c71h, 0c392h
+        dw      03132h, 04332h
+        dw      04432h, 0c532h
 
-        db      03fh, 081h, 034h, 019h
-        db      031h, 02bh, 033h, 03ah
-        db      032h, 03dh, 032h, 0c0h
-        db      018h, 019h, 091h, 0d3h
-        db      033h, 019h, 071h, 06dh
+        dw      0813fh, 01934h
+        dw      02b31h, 03a33h
+        dw      03d32h, 0c032h
+        dw      01918h, 0d391h
+        dw      01933h, 06d71h
 
-        db      032h, 093h, 03eh, 084h
-        db      092h, 063h, 033h, 03ah
-        db      032h, 03dh, 032h, 0c0h
-        db      092h, 0f3h, 03eh, 087h
-        db      031h, 031h, 036h, 025h
+        dw      09332h, 0843eh
+        dw      06392h, 03a33h
+        dw      03d32h, 0c032h
+        dw      0f392h, 0873eh
+        dw      03131h, 02536h
 
-        db      031h, 031h, 035h, 025h
-        db      032h, 093h, 03eh, 08ah
-        db      018h, 019h, 031h, 02bh
-        db      033h, 03ah, 032h, 03dh
-        db      032h, 0c0h, 013h, 019h
+        dw      03131h, 02535h
+        dw      09332h, 08a3eh
+        dw      01918h, 02b31h
+        dw      03a33h, 03d32h
+        dw      0c032h, 01913h
 
-        db      032h, 060h, 013h, 019h
-        db      071h, 0ddh, 092h, 0d3h
-        db      018h, 019h, 071h, 06dh
-        db      032h, 093h, 03eh, 08dh
-        db      034h, 031h, 032h, 034h
+        dw      06032h, 01913h
+        dw      0dd71h, 0d392h
+        dw      01918h, 06d71h
+        dw      09332h, 08d3eh
+        dw      03134h, 03432h
 
-        db      032h, 037h, 033h, 03ah
-        db      032h, 03dh, 032h, 0c0h
-        db      032h, 053h, 032h, 054h
-        db      032h, 0d5h
+        dw      03732h, 03a33h
+        dw      03d32h, 0c032h
+        dw      05332h, 05432h
+        dw      0d532h
 
 ;0235
 tbl03   db      01ah, 099h
@@ -460,15 +460,15 @@ f09:    ;loop L0
                                 ;------------------------
                                 ;a    = drives loop L0
                                 ;mnop = number of cycles in loop L1
-                                ;ijk  = index to tbl04 (cycles L2)
-                                ;bcdefgh = index to tbl03 (speaker on/off) 
+                                ;ijk  = offset in tbl04 (num of cycles in L2)
+                                ;bcdefgh = offset in tbl03 (speaker on/off) 
                                 ;------------------------
         and     al,0fh          ;al and 00001111b
         mov     cl,al           ;cl = [0000mnop]
         and     ah,80h          ;ah and 10000000b
         or      cl,ah           ;cl = [a000mnop]
 ;0436
-f07:    ;loop L1 driving by cl reg.
+f07:    ;loop L1 drived by cl reg.
         mov     ax,[bx]         ;read word from tbl02 again
         rol     al,01h          ;rotate left three times 
         rol     al,01h          ;bit that goes off is set to CF
@@ -482,9 +482,9 @@ f01:
         mov     bx,offset tbl04 ;set base pointer to tbl04
         xor     ah,ah
         add     bx,ax           ;add offset [00000ijk]
-        mov     dl,[bx]         ;result to dl - number of cycles for L2
+        mov     dl,[bx]         ;result into dl - number of cycles for L2
         pop     bx              ;restore pointer to tbl02
-        mov     al,[bx+01]      ;load high part of word to al
+        mov     al,[bx+01]      ;load high part of word into al
         push    bx              ;save pointer to tbl02
         rcl     al,1            ;shift all bits left
                                 ;the bit that goes off is set to CF
@@ -495,7 +495,7 @@ f01:
         add     bx,ax           
         mov     ah,80h          ;10000000b
 ;045D
-f05:    ;loop L2 shaping sound acc. to tbl03
+f05:    ;loop L2 shaping sound according to tbl03
         ;length is given by dl reg. read from tbl04
         push    ax
         in      al,61h          ;8255 (port 61H) 
