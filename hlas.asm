@@ -442,91 +442,103 @@ quit:   ;quit program
 
 ;041C    
 play_letter:
+        ;ascii is in al
+        ;reading pointer to data from tbl01
         cli                     ;clear interrupt enable flag
-        mov     bx,offset (tbl01 - 'A') ;set pointer to 00FEh
-        xor     ah,ah
-        add     bx,ax           ;ascii in al 
-                                ;00FE + 'A'(41) = 013F
-                                ;00FE + 'Z'(5A) = 0158
-                                ;00FE + 'b'(62) = 0160
-        mov     al,[bx]         ;read offset into al
-        mov     bx,offset tbl02 ;set pointer to 0173h
+        mov     bx,offset (tbl01 - 'A') ;set pointer to the begin of ASCII
+        xor     ah,ah           
+        add     bx,ax           ;add offset tbl01 + ascii                         
+        mov     al,[bx]         ;read pointer to tbl02
+        
+        mov     bx,offset tbl02 ;set base pointer to tbl02
         add     bx,ax           ;add offset from ax
 ;042B
 f09:        
-        mov     ax,[bx]
-        and     al,0fh          ;clear upper 4 bits
-        mov     cl,al
-        and     ah,80h
-        or      cl,ah
+        mov     ax,[bx]         ;read data from tbl02
+                                ;------------------------
+                                ;ax [abcd efgh ijkl mnop]
+                                ;------------------------
+        and     al,0fh          ;al and 00001111b
+        mov     cl,al           ;cl = [0000mnop]
+        and     ah,80h          ;ah and 10000000b
+        or      cl,ah           ;cl = [a000mnop]
 ;0436
-f07:
-        mov     ax,[bx]
-        rol     al,1
-        rol     al,1
-        rol     al,1
-        and     al,07
-        push    bx
-        jne     f01
-        jmp     f02
+f07:    ;loop driving by cl reg.
+        mov     ax,[bx]         ;read data from tbl02 again
+        rol     al,01h          ;rotate left three times 
+        rol     al,01h          ;bit that goes off is set to CF
+        rol     al,01h          ;the same bit is inserted to right-most position
+        and     al,07h          ;al and 00000111b [00000ijk]
+        push    bx              ;save pointer to tbl02
+        jne     f01             ;jump if not zero
+        jmp     f02             ;otherwise wait about k2
 ;0446
 f01:
-        mov     bx,offset tbl04
+        mov     bx,offset tbl04 ;set base pointer to tbl04
         xor     ah,ah
-        add     bx,ax
-        mov     dl,[bx]
-        pop     bx
-        mov     al,[bx+01]
-        push    bx
-        rcl     al,1
-        mov     bx,offset tbl03
-        add     bx,ax
-        mov     ah,80h
+        add     bx,ax           ;add offset [00000ijk]
+        mov     dl,[bx]         ;result to dl - number of cycles
+        pop     bx              ;restore pointer to tbl02
+        mov     al,[bx+01]      ;load high part of word to al
+        push    bx              ;save pointer to tbl02
+        rcl     al,1            ;shift all bits left
+                                ;the bit that goes off is set to CF
+                                ;and previous value of CF is inserted to the 
+                                ;right-most position
+                                ;al = [bcdefgh0]
+        mov     bx,offset tbl03 ;set base pointer to tbl03
+        add     bx,ax           
+        mov     ah,80h          ;10000000b
 ;045D
-f05:
+f05:    ;loop shaping sound acc. to tbl03
+        ;length is given by dl reg. read from tbl04
         push    ax
         in      al,61h          ;8255 (port 61H) 
                                 ;bit 0 controls the 8253 timer
                                 ;bit 1 controls the speaker
         and     al,0fch         ;clear bit 0 and bit 1 (speaker off)
-        and     ah,[bx]
-        je      f03             ;leave speaker off
+        and     ah,[bx]         ;10000000b and value from tbl03
+        je      f03             ;leave speaker off if zero
         or      al,02h          ;set bit 0 and bit 1 (speaker on)
 ;0468
 f03:
         out     61h,al          ;write to 8255
         
-        ;wait k1 period
-        mov     al,[k1]
+        mov     al,[k1]         ;wait k1 cycles
 ;046D
 f04:
         dec     al
-        jne     f04
+        jne     f04             ;waitning loop
         
         pop     ax
-        dec     dl
-        je      f02
-        ror     ah,1
-        jnb     f05
-        inc     bx
-        jmp     f05
+        dec     dl              ;decrement counter read from tbl04
+        je      f02             ;jump if zero
+        ror     ah,1            ;shift all bits right
+                                ;the bit that goes off is set to CF
+                                ;the same bit is inserted to left-most position
+        jnb     f05             ;jump if CF=0
+        inc     bx              ;increment pointer to tbl03
+        jmp     f05             ;loop
           
 ;047d
 f02:    
         push    cx
-        mov     cx,[k2]
+        mov     cx,[k2]         ;wait k2 cycles
 ;0482
 f06:
-        loop    f06
+        loop    f06             ;waiting loop
         pop     cx
+        
         dec     cl
         mov     al,cl
-        and     al,0fh
-        pop     bx
-        jne     f07
-        rol     cl,1
-        jb      f08
-        add     bx,02h
+        and     al,0fh          ;and 00001111b
+        pop     bx              ;restore pointer to tbl02
+        jne     f07             ;jump if not zero
+        
+        rol     cl,1            ;bit that goes off is set to CF
+                                ;the same bit is inserted to right-most position
+        jb      f08             ;jump if CF=1
+        add     bx,02h          ;move tbl02 pointer to next word 
         jmp     f09
 ;0497
 f08:
