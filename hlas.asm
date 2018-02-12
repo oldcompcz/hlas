@@ -1,8 +1,17 @@
-;hlas.asm
+;******************************************************************************
+;       hlas.asm
 ;
-;how to compile: 
-;tasm hlas
-;tlink hlas /t
+;       https://github.com/berk76/hlas
+;       
+;       Original author is unknown       
+;       Disassembled by Jaroslav Beran <jaroslav.beran@gmail.com>, on 12.2.2018
+;
+;       How to compile:
+; 
+;       tasm hlas
+;       tlink hlas /t
+;
+;******************************************************************************
 
 .model tiny        
 
@@ -15,6 +24,7 @@ start:
 ;************************
 ;* CPU Measure routine
 ;************************
+
         ;0040h:006Ch - Timer Counter
         ;When this value reaches midnight (1800B0h), it is reset to 0
         mov     ax,0040h        ;set segment of timer
@@ -55,6 +65,7 @@ n02:
 ;************************
 ;* DATA
 ;************************
+
 ;013C
 k1      db      03h
 
@@ -310,15 +321,16 @@ txt01   db      74 dup (' ')
 ;************************
 ;* Main routine
 ;************************
+
 ;0393   
-n03:    ;probably info about program/author but ceared in my binary version
+n03:    ;probably info about program/author but cleared in my binary version
         ;can somebody provide original text ???
         mov     dx,offset txt01
         mov     ah,09
         int     21h
         
         ;check for cmd parameters
-        mov     al,ds:[80h]        ;length of cmd parameters
+        mov     al,ds:[80h]     ;length of cmd parameters
         cmp     al,0
         jne     n04
         jmp     quit            ;quit program if no cmd parameters
@@ -427,6 +439,7 @@ quit:   ;quit program
 ;************************
 ;* Play letter routine
 ;************************
+
 ;041C    
 play_letter:
         cli                     ;clear interrupt enable flag
@@ -472,19 +485,24 @@ f01:
 ;045D
 f05:
         push    ax
-        in      al,61h
-        and     al,0fch
+        in      al,61h          ;8255 (port 61H) 
+                                ;bit 0 controls the 8253 timer
+                                ;bit 1 controls the speaker
+        and     al,0fch         ;clear bit 0 and bit 1 (speaker off)
         and     ah,[bx]
-        je      f03
-        or      al,02h
+        je      f03             ;leave speaker off
+        or      al,02h          ;set bit 0 and bit 1 (speaker on)
 ;0468
 f03:
-        out     61h,al
+        out     61h,al          ;write to 8255
+        
+        ;wait k1 period
         mov     al,[k1]
 ;046D
 f04:
         dec     al
         jne     f04
+        
         pop     ax
         dec     dl
         je      f02
