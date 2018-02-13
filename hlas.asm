@@ -330,7 +330,7 @@ n03:    ;probably info about program/author but cleared in my binary version
         int     21h
         
         ;check for cmd parameters
-        mov     al,ds:[80h]     ;length of cmd parameters
+        mov     al,ds:[80h]     ;length of cmd parameters into al
         cmp     al,0
         jne     n04
         jmp     quit            ;quit program if no cmd parameters
@@ -339,29 +339,29 @@ n03:    ;probably info about program/author but cleared in my binary version
 n04:    ;put zero word at 81h-st position of cmd param
         xor     ah,ah
         add     ax,81h          ;80h + 81h
-        mov     bx,ax           ;set pointer
+        mov     bx,ax           ;set pointer at 80h + 81h
         mov     byte ptr [bx+01],00h
         mov     byte ptr [bx],00h
         
         mov     bx,81h          ;ptr to the 1st. char of cmd param
-        mov     ch,0bbh         ;set CH letter as current char
+        mov     ch,0bbh         ;set 0bbh as current char (0bbh stands for ch)
 ;03B7    
 next_char:
         ;process next char        
         mov     cl,ch           ;save previous character
         mov     al,ch           ;save previous character
         
-        mov     ch,[bx]         ;read char from cmd string
+        mov     ch,[bx]         ;read current char from cmd string
         
         ;to upper case
         cmp     ch,61h          ;a letter
-        jb      cmd_end_test    ;go to end str end test if below
+        jb      cmd_end_test    ;go to end of line test if less than a
         cmp     ch,7ah          ;z letter
-        jg      cmd_end_test    ;go to end str end test if greater
-        and     ch,0dfh         ;convert to upper
+        jg      cmd_end_test    ;go to end of line test if greater than z
+        and     ch,0dfh         ;convert to upper character
 ;03CA    
 cmd_end_test:    
-        ;test for end of cmd param string
+        ;end of line test
         or      al,al           ;zero test of previous character
         jne     n07
         jmp     quit            ;quit if zero
@@ -379,7 +379,7 @@ n08:
         cmp     al,5ah          ;Z letter
         jg      no_alpha
         
-        ;test for CH letter
+        ;test if current char is CH letter
         cmp     al,43h          ;C letter
         mov     al,ch           ;move curr char to al
         jne     n11
@@ -392,7 +392,7 @@ n11:
         jne     n13
 ;03EE
 ch_letter:    
-        ;set ch as current char    
+        ;set CH as current char    
         add     al,1ah          ;(H)48h + 1ah = (b)62h ???
         mov     ch,0bbh         ;set CH as current char
 ;03F2    
