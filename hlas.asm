@@ -15,6 +15,10 @@
 
 .model tiny
 
+cntdw_div       equ     0ffh
+cntdw01         equ     0ffffh
+cntdw02         equ     0ffffh / cntdw_div 
+
 .data
 
 .code
@@ -25,48 +29,21 @@ start:
 ;* CPU Measure routine
 ;************************
 
-        ;0040h:006Ch - Timer Counter
-        ;When this value reaches midnight (1800B0h), it is reset to 0
-        mov     ax,0040h        ;set segment of timer
-        mov     es,ax
-        mov     bx,006ch        ;set offset of timer
-        xor     cx,cx           ;reset counter
-        mov     al,es:[bx]      ;load current tick as reference
+        call    setup_int       ;install custom interrupt handler
+        mov     ax,cntdw02      ;setup new countdown 
+        call    set_countdown
 
-n01:    ;wait for start of next tick
-        cmp     al,es:[bx]      ;check for one tick
-        je      n01
-
-        ;measure processor speed
-        mov     al,es:[bx]      ;load current tick as reference
-n02:
-        inc     cx              ;increase counter
-        cmp     al,es:[bx]      ;compare with current value
-        je      n02             ;wait for next tick
-        
-        ;calculation of two constatns k1 and k2
-        xor     dx,dx
-        mov     ah,ch           ;high part of counter into ah
-        mov     ch,04h          ;04OOh into cx
-        xor     al,al
-        mov     cl,al
-        div     cx              ;ax / 1024
-        mov     cx,ax           ;result into cx
-        mov     al,[k1]         ;k1 (03h) into al
-        mul     cl              ;result * 3
-        mov     [k1],al         ;save k1
-
-        mov     ax,[k2]         ;k2 (0d2h) into ax
-        mul     cx              ;result * 210
-        mov     [k2],ax         ;save k2
         jmp     n03
 
 ;************************
 ;* DATA
 ;************************
 
-k1      db      03h
-k2      dw      000d2h
+tim01   db      ?               ;timer
+tim02   db      cntdw_div       ;countdown for orig. timer handler
+
+ori_int dw ?                    ;address of original interrupt handler
+        dw ?
 
 ;offset A of tbl01
 tbl01   db      000h, 002h        ;AB
@@ -414,12 +391,16 @@ no_alpha_delay:
         nop
         nop
         loop    no_alpha_delay
-    
+
 no_alpha_end:
         pop     cx
         jmp     go_for_next_char
 
 quit:   ;quit program
+        mov     ax,cntdw01      ;restore orig. countdown 
+        call    set_countdown
+        call    restore_int     ;restore orig. interrupt handler
+
         sti                     ;set interrupt enable
         int     20h             ;terminates program execution
 
@@ -495,12 +476,14 @@ f05:    ;loop L2 shaping sound according to tbl03
 f03:
         out     61h,al          ;write to 8255
 
-        mov     al,[k1]         ;wait k1 cycles
+        sti                     ;enable interrupt
+        mov     al,[tim01]      ;get timer
 
 f04:
-        dec     al
-        jne     f04             ;waitning loop
-        
+        cmp     al,[tim01]
+        je      f04             ;waitning loop
+        cli                     ;disable interrupt
+
         pop     ax
         dec     dl              ;decrement counter read from tbl04
         je      f02             ;jump if zero
@@ -512,12 +495,15 @@ f04:
         jmp     f05             ;loop L2
 
 f02:
-        push    cx
-        mov     cx,[k2]         ;wait k2 cycles
-
+        push    ax
+        sti                     ;enable interrupt
+        mov     al,[tim01]
+        add     al,20           ;wait for 20 ticks
 f06:
-        loop    f06             ;waiting loop
-        pop     cx
+        cmp     al,[tim01]
+        jne    f06              ;waiting loop
+        cli                     ;disable interrupt
+        pop     ax
         
         dec     cl
         mov     al,cl
@@ -534,5 +520,115 @@ f06:
 f08:
         sti                     ;set interrupt enable
         ret
+
+;*********************************
+;* Set countdown of toimer 0
+;*********************************
+;               1193180 
+; COUNTDOWN = ---------
+;             FREQUENCY
+
+;ax = frequency
+
+set_countdown:
+        push    bx
+        mov     bx,ax
+
+        mov     al,00110110b
+        out     43h,al           ;want to load new value to timer 0
+
+        mov     al,bl
+        out     40h,al           ;load low value of countdown
+        mov     al,bh
+        out     40h,al           ;load high value of countdown
+
+        pop     bx
+        ret
+
+;*********************************
+; Setup interrupt
+;*********************************
+setup_int:
+        ;AH=35h - GET INTERRUPT VECTOR
+        ;AL = interrupt number
+        ;Return: ES:BX -> current interrupt handler
+        mov     ax,351ch
+        int     21h
+        mov     [word ptr ori_int],bx
+        mov     [word ptr ori_int+2],es
+
+        ;AH = 25h - SET INTERRUPT VECTOR
+        ;AL = interrupt number
+        ;DS:DX -> new interrupt handler
+        mov     ax,251ch
+        mov     dx,offset int_h
+        int     21h
+
+        ret
+
+;*********************************
+; Restore interrupt
+;*********************************
+restore_int:
+        ;AH = 25h - SET INTERRUPT VECTOR
+        ;AL = interrupt number
+        ;DS:DX -> new interrupt handler
+        mov     dx,[word ptr ori_int]
+        mov     ax,ds           ;save ds
+        mov     es,ax
+        mov     ds,[word ptr ori_int+2]
+        mov     ax,251ch
+        int     21h
+        mov     ax,es           ;restore ds
+        mov     ds,ax
+
+        ret
+
+;*********************************
+; Interrupt handler
+;*********************************
+int_h:
+        cli
+        push    es
+        push    ds
+        push    si
+        push    dx
+        push    cx
+        push    bx
+        push    ax
+
+        push    cs
+        pop     ds
+
+        inc     [tim01]         ;increment timer
+
+        dec     [tim02]         ;decrement dummy timer
+        jnz     int_h3          ;exit if not zero
+        mov     al,cntdw_div
+        mov     [tim02],al      ;reset orig handler counter
+
+int_h2:                         ;and call orig handler
+        pop     ax
+        pop     bx
+        pop     cx
+        pop     dx
+        pop     si
+        pop     ds
+        pop     es
+        sti
+
+        jmp     [dword ptr cs:ori_int]
+
+int_h3: ;do not call orig handler
+        pop     ax
+        pop     bx
+        pop     cx
+        pop     dx
+        pop     si
+        pop     ds
+        pop     es
+        sti
+
+        iret
 
         end start
