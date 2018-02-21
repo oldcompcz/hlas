@@ -13,7 +13,7 @@
 ;
 ;******************************************************************************
 
-.model tiny        
+.model tiny
 
 .data
 
@@ -32,14 +32,13 @@ start:
         mov     bx,006ch        ;set offset of timer
         xor     cx,cx           ;reset counter
         mov     al,es:[bx]      ;load current tick as reference
-;010D
+
 n01:    ;wait for start of next tick
         cmp     al,es:[bx]      ;check for one tick
         je      n01
-        
+
         ;measure processor speed
         mov     al,es:[bx]      ;load current tick as reference
-;0115
 n02:
         inc     cx              ;increase counter
         cmp     al,es:[bx]      ;compare with current value
@@ -56,7 +55,7 @@ n02:
         mov     al,[k1]         ;k1 (03h) into al
         mul     cl              ;result * 3
         mov     [k1],al         ;save k1
-         
+
         mov     ax,[k2]         ;k2 (0d2h) into ax
         mul     cx              ;result * 210
         mov     [k2],ax         ;save k2
@@ -66,13 +65,9 @@ n02:
 ;* DATA
 ;************************
 
-;013C
 k1      db      03h
-
-;013D
 k2      dw      000d2h
 
-;013F
 ;offset A of tbl01
 tbl01   db      000h, 002h        ;AB
         db      006h, 00ah        ;CD
@@ -100,11 +95,10 @@ tbl01   db      000h, 002h        ;AB
         db      0aeh, 0b0h
         db      0c2h, 0c2h
         db      086h, 0bch
-        
-;0173
+
 tbl02   dw      08136h, 01934h
         dw      0ab31h, 01918h
-        dw      0c391h, 01934h 
+        dw      0c391h, 01934h
         dw      0e031h, 08436h
         dw      0e392h, 01935h
 
@@ -161,7 +155,6 @@ tbl02   dw      08136h, 01934h
         dw      05332h, 05432h
         dw      0d532h
 
-;0235
 tbl03   db      01ah, 099h
         db      0e1h, 0c3h
         db      0e1h, 0c7h
@@ -308,108 +301,103 @@ tbl03   db      01ah, 099h
         db      09ah, 0c6h
         db      059h
 
-;033C
 tbl04   db      000h, 02eh
         db      05ah, 05eh
         db      0feh, 000h
         db      000h, 000h
 
-;0344   
 txt01   db      74 dup (' ')
         db      13,10,13,10,'$'
-        
+
 ;************************
 ;* Main routine
 ;************************
 
-;0393   
 n03:    ;probably info about program/author but cleared in my binary version
         ;can somebody provide original text ???
         mov     dx,offset txt01
         mov     ah,09
         int     21h
-        
+
         ;check for cmd parameters
         mov     al,ds:[80h]     ;length of cmd parameters into al
         cmp     al,0
         jne     n04
         jmp     quit            ;quit program if no cmd parameters
 
-;03A4        
 n04:    ;put zero word at 81h-st position of cmd param
         xor     ah,ah
         add     ax,81h          ;80h + 81h
         mov     bx,ax           ;set pointer at 80h + 81h
         mov     byte ptr [bx+01],00h
         mov     byte ptr [bx],00h
-        
+
         mov     bx,81h          ;ptr to the 1st. char of cmd param
         mov     ch,0bbh         ;set 0bbh as current char (0bbh stands for ch)
-;03B7    
+
 next_char:
         ;process next char        
         mov     cl,ch           ;save previous character
         mov     al,ch           ;save previous character
-        
+
         mov     ch,[bx]         ;read current char from cmd string
-        
+
         ;to upper case
         cmp     ch,61h          ;a letter
         jb      cmd_end_test    ;go to end of line test if less than a
         cmp     ch,7ah          ;z letter
         jg      cmd_end_test    ;go to end of line test if greater than z
         and     ch,0dfh         ;convert to upper character
-;03CA    
-cmd_end_test:    
+
+cmd_end_test:
         ;end of line test
         or      al,al           ;zero test of previous character
         jne     n07
         jmp     quit            ;quit if zero
-;03D1    
+
 n07:    ;test if char is less than A
         mov     al,cl           ;restore previous char into al
         cmp     al,41h          ;A letter
         jnl     n08             ;jump if not less
-;03D7
+
 no_alpha:
-        ;no alphabet char        
+        ;no alphabet char
         jmp     no_alpha2
-;03DA    
-n08:        
+
+n08:
         cmp     al,5ah          ;Z letter
         jg      no_alpha
-        
+
         ;test if current char is CH letter
         cmp     al,43h          ;C letter
         mov     al,ch           ;move curr char to al
         jne     n11
         cmp     al,48h          ;H letter
         je      ch_letter
-;03E8
-n11:        
+
+n11:
         cmp     al,27h          ;' letter
         mov     al,cl           ;restore previous char into al
         jne     n13
-;03EE
-ch_letter:    
-        ;set CH as current char    
+
+ch_letter:
+        ;set CH as current char
         add     al,1ah          ;(H)48h + 1ah = (b)62h ???
         mov     ch,0bbh         ;set CH as current char
-;03F2    
-n13:    ;call speaker    
+
+n13:    ;call speaker
         push    cx
         push    bx
         call    play_letter
         pop     bx
         pop     cx
-;03F9    
+
 go_for_next_char:    
-        ;go for next char    
+        ;go for next char
         inc     bx              ;move pointer to next char
         jmp     next_char       ;main loop
-         
-;03FC    
-no_alpha2:    
+
+no_alpha2:
         ;no alphabet char
         push    cx
         mov     cx,00h          ;reset counter
@@ -421,17 +409,16 @@ no_alpha2:
         mov     cx,4000h
         cmp     al,20h          ;space
         jne     no_alpha_end
-;0412    
-no_alpha_delay:        
+
+no_alpha_delay:
         nop
         nop
         loop    no_alpha_delay
-;0416    
+    
 no_alpha_end:
         pop     cx
         jmp     go_for_next_char
-        
-;0419    
+
 quit:   ;quit program
         sti                     ;set interrupt enable
         int     20h             ;terminates program execution
@@ -440,20 +427,19 @@ quit:   ;quit program
 ;* Play letter routine
 ;************************
 
-;041C    
 play_letter:
         ;ascii is provided in al
         ;reading pointer to data from tbl01
         cli                     ;clear interrupt enable flag
         mov     bx,offset (tbl01 - 'A') ;set pointer to the begin of ASCII
         xor     ah,ah           
-        add     bx,ax           ;add offset tbl01 + ascii                         
+        add     bx,ax           ;add offset tbl01 + ascii
         mov     al,[bx]         ;read pointer to tbl02
-        
+
         mov     bx,offset tbl02 ;set base pointer to tbl02
         add     bx,ax           ;add offset from ax
-;042B
-f09:    ;loop L0    
+
+f09:    ;loop L0
         mov     ax,[bx]         ;read word from tbl02
                                 ;------------------------
                                 ;ax [abcd efgh ijkl mnop]
@@ -467,7 +453,7 @@ f09:    ;loop L0
         mov     cl,al           ;cl = [0000mnop]
         and     ah,80h          ;ah and 10000000b
         or      cl,ah           ;cl = [a000mnop]
-;0436
+
 f07:    ;loop L1 drived by cl reg.
         mov     ax,[bx]         ;read word from tbl02 again
         rol     al,01h          ;rotate left three times 
@@ -477,7 +463,7 @@ f07:    ;loop L1 drived by cl reg.
         push    bx              ;save pointer to tbl02
         jne     f01             ;jump if not zero
         jmp     f02             ;otherwise wait about k2
-;0446
+
 f01:
         mov     bx,offset tbl04 ;set base pointer to tbl04
         xor     ah,ah
@@ -492,9 +478,9 @@ f01:
                                 ;right-most position
                                 ;al = [bcdefgh0]
         mov     bx,offset tbl03 ;set base pointer to tbl03
-        add     bx,ax           
+        add     bx,ax
         mov     ah,80h          ;10000000b
-;045D
+
 f05:    ;loop L2 shaping sound according to tbl03
         ;length is given by dl reg. read from tbl04
         push    ax
@@ -505,12 +491,12 @@ f05:    ;loop L2 shaping sound according to tbl03
         and     ah,[bx]         ;10000000b and value from tbl03
         je      f03             ;leave speaker off if zero
         or      al,02h          ;set bit 0 and bit 1 (speaker on)
-;0468
+
 f03:
         out     61h,al          ;write to 8255
-        
+
         mov     al,[k1]         ;wait k1 cycles
-;046D
+
 f04:
         dec     al
         jne     f04             ;waitning loop
@@ -524,12 +510,11 @@ f04:
         jnb     f05             ;jump if CF=0
         inc     bx              ;increment pointer to tbl03
         jmp     f05             ;loop L2
-          
-;047d
-f02:    
+
+f02:
         push    cx
         mov     cx,[k2]         ;wait k2 cycles
-;0482
+
 f06:
         loop    f06             ;waiting loop
         pop     cx
@@ -545,9 +530,9 @@ f06:
         jb      f08             ;jump if CF=1
         add     bx,02h          ;move tbl02 pointer to next word 
         jmp     f09             ;loop L0
-;0497
+
 f08:
         sti                     ;set interrupt enable
         ret
-            
+
         end start
