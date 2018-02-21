@@ -15,7 +15,7 @@
 
 .model tiny
 
-cntdw_div       equ     0ffh
+cntdw_div       equ     190h
 cntdw01         equ     0ffffh
 cntdw02         equ     0ffffh / cntdw_div 
 
@@ -39,8 +39,8 @@ start:
 ;* DATA
 ;************************
 
-tim01   db      ?               ;timer
-tim02   db      cntdw_div       ;countdown for orig. timer handler
+tim01   dw      ?               ;timer
+tim02   dw      cntdw_div       ;countdown for orig. timer handler
 
 ori_int dw ?                    ;address of original interrupt handler
         dw ?
@@ -477,10 +477,10 @@ f03:
         out     61h,al          ;write to 8255
 
         sti                     ;enable interrupt
-        mov     al,[tim01]      ;get timer
+        mov     ax,[tim01]      ;get timer
 
 f04:
-        cmp     al,[tim01]
+        cmp     ax,[tim01]
         je      f04             ;waitning loop
         cli                     ;disable interrupt
 
@@ -497,10 +497,10 @@ f04:
 f02:
         push    ax
         sti                     ;enable interrupt
-        mov     al,[tim01]
-        add     al,20           ;wait for 20 ticks
+        mov     ax,[tim01]
+        add     ax,20           ;wait for 20 ticks
 f06:
-        cmp     al,[tim01]
+        cmp     ax,[tim01]
         jne    f06              ;waiting loop
         cli                     ;disable interrupt
         pop     ax
@@ -589,12 +589,7 @@ restore_int:
 ;*********************************
 int_h:
         cli
-        push    es
         push    ds
-        push    si
-        push    dx
-        push    cx
-        push    bx
         push    ax
 
         push    cs
@@ -604,29 +599,19 @@ int_h:
 
         dec     [tim02]         ;decrement dummy timer
         jnz     int_h3          ;exit if not zero
-        mov     al,cntdw_div
-        mov     [tim02],al      ;reset orig handler counter
+        mov     ax,cntdw_div
+        mov     [tim02],ax      ;reset orig handler counter
 
 int_h2:                         ;and call orig handler
         pop     ax
-        pop     bx
-        pop     cx
-        pop     dx
-        pop     si
         pop     ds
-        pop     es
         sti
 
         jmp     [dword ptr cs:ori_int]
 
 int_h3: ;do not call orig handler
         pop     ax
-        pop     bx
-        pop     cx
-        pop     dx
-        pop     si
         pop     ds
-        pop     es
         sti
 
         iret
