@@ -283,15 +283,16 @@ tbl04   db      000h, 02eh
         db      0feh, 000h
         db      000h, 000h
 
-txt01   db      74 dup (' ')
-        db      13,10,13,10,'$'
+txt01   db      '* HLAS *',13,10
+        db      '(https://github.com/berk76/hlas)',13,10
+        db      13,10,'$'
 
 ;************************
 ;* Main routine
 ;************************
 
-n03:    ;probably info about program/author but cleared in my binary version
-        ;can somebody provide original text ???
+n03:    ;info about program
+        ;original author is unknown
         mov     dx,offset txt01
         mov     ah,09
         int     21h
@@ -522,7 +523,7 @@ f08:
         ret
 
 ;*********************************
-;* Set countdown of toimer 0
+;* Set countdown of timer 0
 ;*********************************
 ;               1193180 
 ; COUNTDOWN = ---------
