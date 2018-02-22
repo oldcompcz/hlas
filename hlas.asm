@@ -283,7 +283,7 @@ tbl04   db      000h, 02eh
         db      0feh, 000h
         db      000h, 000h
 
-txt01   db      '* HLAS *',13,10
+txt01   db      'HLAS 2',13,10
         db      '(https://github.com/berk76/hlas)',13,10
         db      13,10,'$'
 
