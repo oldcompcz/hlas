@@ -1,7 +1,7 @@
 ;******************************************************************************
 ;       hlas.asm
 ;
-;       https://github.com/berk76/hlas
+;       https://github.com/oldcompcz/hlas
 ;       
 ;       Original author is unknown       
 ;       Disassembled by Jaroslav Beran <jaroslav.beran@gmail.com>, on 12.2.2018
